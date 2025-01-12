@@ -1,31 +1,14 @@
 use core::slice;
 use std::collections::VecDeque;
-use std::error::Error;
 use std::fs::{self, read_dir, DirEntry, ReadDir};
-use std::io::Error;
 use std::path::{self, Path, PathBuf};
 use std::str::FromStr;
 use std::rc::Rc;
 use std::sync::mpsc::{Sender, Receiver};
-use std::sync::mpsc;
+use std::sync::{mpsc, Mutex, Arc};
 use std::thread;
+mod utils;
 
-
-fn get_partition_index<T>(vec : &Vec<T>, num_of_divisions : i32) -> Vec<usize>{
-    let mut index_vec = Vec::new();
-    let num_per_slice = vec.len()/num_of_divisions as usize;
-    index_vec.push(0);
-    for i in 0..num_of_divisions -1 {
-        index_vec.push(num_per_slice*i as usize);
-    }
-    return index_vec;
-}
-
-fn print_lines(vec : &Vec<String>) {
-    for line in vec{
-        println!("{}", line);
-    }
-}
 
 fn get_dir_items<T: AsRef<Path>>(dir :T) -> Vec<PathBuf> {
     let dir = dir.as_ref();
@@ -112,7 +95,8 @@ fn mt_search(start : impl AsRef<Path>, string : &'static  String, verbose: bool,
             }
         } 
     }
-    let mut match_list : Vec<String> = Vec::new();
+    let match_list : Vec<String> = Vec::new();
+    let match_list_= Arc::new(Mutex::new(match_list));
     let mut remaining : VecDeque<String> = VecDeque::new();
     match start.as_ref().to_str() {
         Some(s) => remaining.push_back(String::from(s)),
@@ -157,18 +141,6 @@ fn mt_search(start : impl AsRef<Path>, string : &'static  String, verbose: bool,
         }
         remaining.clear();
         //colects output from threads
-        for i in 0..threads{
-            let received = rx_vec[i as usize].recv();
-            //attempts to get value
-            || -> Option <()>{
-                match received {
-                    Ok(value) => remaining.extend(value?),
-                    Err(_) => ()
-                }
-                return Some(());
-            }();
-            
-        }
         handle_vec.drain(0..(threads as usize)).for_each(|x| {let _ = x.join();});
     }
     return Ok(match_list);
