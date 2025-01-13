@@ -1,13 +1,15 @@
+use std::collections::VecDeque;
 use std::path::{Path};
 use std::sync::{Mutex, Arc};
 
-pub fn get_partition_index<T>(vec : &Vec<T>, num_of_divisions : i32) -> Vec<usize>{
+
+pub fn get_partition_index<T>(vec : &VecDeque<T>, num_of_divisions : i32) -> Vec<usize>{
     let mut index_vec = Vec::new();
     let num_per_slice = vec.len()/num_of_divisions as usize;
-    index_vec.push(0);
-    for i in 0..num_of_divisions -1 {
+    for i in 0..num_of_divisions {
         index_vec.push(num_per_slice*i as usize);
     }
+    index_vec.push(vec.len());
     return index_vec;
 }
 
@@ -31,7 +33,10 @@ pub fn return_matches<T: AsRef<Path>, S : AsRef<str>>(path_list : &Vec<T>, strin
     }
     return matches;
 } 
-//safe functions get lock before attempting to use fuc
+
+
+
+//gets lock before 
 pub fn safe_is_empty<T>(arc_mutex_vec : &Arc<Mutex<Vec<T>>>) -> bool {
     //gets access
     let vec = arc_mutex_vec.lock().unwrap();
